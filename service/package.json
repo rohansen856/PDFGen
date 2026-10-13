@@ -1,0 +1,28 @@
+{
+  "name": "pdfgen-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "api": "node src/api.js",
+    "worker": "node src/worker.js",
+    "test": "node --test test/unit/",
+    "test:render": "node --test test/render/",
+    "e2e": "node --test --test-concurrency=1 test/e2e/"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
+    "@aws-sdk/client-sqs": "^3.1152.0",
+    "@aws-sdk/lib-storage": "^3.1152.0",
+    "@aws-sdk/s3-request-presigner": "^3.1152.0",
+    "archiver": "^7.0.1",
+    "fastify": "^4.29.1",
+    "handlebars": "^4.7.10",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.23.1",
+    "puppeteer-core": "^23.11.1"
+  }
+}
