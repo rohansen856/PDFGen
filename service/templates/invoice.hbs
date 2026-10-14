@@ -1,0 +1,35 @@
+<!doctype html><html><head><meta charset="utf-8">{{> styles}}</head><body>
+{{#if isFirst}}
+  <h1>TAX INVOICE</h1>
+  <div class="meta">
+    <span class="muted">Invoice No.</span><b>{{d.invoice_number}}</b>
+    <span class="muted">Invoice Date</span><span>{{d.invoice_date}}</span>
+    <span class="muted">Place of Supply</span><span>{{d.place_of_supply}}</span>
+    <span class="muted">Reverse Charge</span><span>{{#if d.reverse_charge}}Yes{{else}}No{{/if}}</span>
+  </div>
+  <div class="parties">
+    <div class="party"><span class="muted">Supplier</span><b>{{d.company.name}}</b>{{d.company.address}}<br>GSTIN: {{d.company.gstin}}</div>
+    <div class="party"><span class="muted">Bill to</span><b>{{d.buyer.name}}</b>{{d.buyer.address}}<br>GSTIN: {{d.buyer.gstin}}</div>
+  </div>
+{{else}}
+  <p class="continued">{{d.invoice_number}} — line items continued (from item {{firstLineNo}})</p>
+{{/if}}
+<table class="lines">
+  <thead><tr><th>#</th><th>Description</th><th>HSN/SAC</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Taxable</th><th class="num">CGST</th><th class="num">SGST</th><th class="num">IGST</th><th class="num">Amount</th></tr></thead>
+  <tbody>
+  {{#each rows}}
+    <tr><td>{{lineNo}}</td><td>{{description}}</td><td>{{hsn}}</td><td class="num">{{qty}}</td><td class="num">{{money rate}}</td><td class="num">{{money taxable}}</td><td class="num">{{money cgst}}</td><td class="num">{{money sgst}}</td><td class="num">{{money igst}}</td><td class="num">{{money amount}}</td></tr>
+  {{/each}}
+  </tbody>
+</table>
+{{#if isLast}}
+  <table class="totals">
+    <tr><td>Taxable value</td><td class="num">{{money d.totals.taxable}}</td></tr>
+    <tr><td>CGST</td><td class="num">{{money d.totals.cgst}}</td></tr>
+    <tr><td>SGST</td><td class="num">{{money d.totals.sgst}}</td></tr>
+    <tr><td>IGST</td><td class="num">{{money d.totals.igst}}</td></tr>
+    <tr class="grand"><td>Invoice total</td><td class="num">{{money d.totals.grand_total}}</td></tr>
+  </table>
+  <p class="muted">Amount in words: {{d.totals.amount_in_words}}</p>
+{{/if}}
+</body></html>

@@ -1,0 +1,22 @@
+<style>
+  @page { size: A4; margin: 14mm 12mm 18mm 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Noto Sans", "DejaVu Sans", sans-serif; font-size: 9.5pt; color: #111; margin: 0; }
+  h1 { font-size: 16pt; margin: 0 0 4px; letter-spacing: .5px; }
+  .muted { color: #555; }
+  .parties { display: flex; gap: 16px; margin: 10px 0 12px; }
+  .party { flex: 1; border: 1px solid #ccc; padding: 8px; border-radius: 3px; }
+  .party b { display: block; margin-bottom: 2px; }
+  .meta { display: grid; grid-template-columns: repeat(4, auto); gap: 2px 14px; margin-bottom: 10px; }
+  table.lines { width: 100%; border-collapse: collapse; }
+  table.lines thead { display: table-header-group; } /* repeat header on every printed page */
+  table.lines tr { page-break-inside: avoid; }
+  table.lines th { background: #f0f0f0; text-align: left; border-bottom: 1px solid #999; padding: 4px; }
+  table.lines td { border-bottom: 1px solid #e3e3e3; padding: 3px 4px; vertical-align: top; }
+  .num { text-align: right; white-space: nowrap; }
+  .totals { margin-top: 10px; margin-left: auto; width: 45%; border-collapse: collapse; }
+  .totals td { padding: 3px 4px; }
+  .totals tr.grand td { border-top: 2px solid #111; font-weight: bold; font-size: 11pt; }
+  .continued { margin: 0 0 6px; font-style: italic; }
+  .notes { margin-top: 14px; }
+</style>
