@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim
+FROM node:22-bookworm-slim
 
 # System Chromium + fonts. Noto covers the ₹ sign and Indic scripts (Devanagari, Tamil, ...) that
 # GST invoices often need; without them Chromium silently renders tofu boxes.
