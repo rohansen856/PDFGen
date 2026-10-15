@@ -1,0 +1,93 @@
+# Local stand-in for the AWS deployment. Nothing here talks to a cloud service.
+#   postgres  -> RDS (existing ERP database, separate schema)
+#   rustfs    -> S3 (archive bucket with Object Lock, downloads bucket)
+#   elasticmq -> SQS (high / low priority queues + DLQ)
+#   api, worker -> EC2 instance(s) running the PDF service
+name: pdfgen
+
+x-service-env: &service-env
+  DATABASE_URL: postgres://pdf:pdf@postgres:5432/pdf
+  S3_ENDPOINT: http://rustfs:9000
+  S3_PUBLIC_ENDPOINT: http://localhost:9000 # used only to sign download URLs handed to clients
+  S3_ACCESS_KEY: rustfsadmin
+  S3_SECRET_KEY: rustfsadmin
+  S3_REGION: ap-south-1
+  ARCHIVE_BUCKET: pdf-archive
+  DOWNLOADS_BUCKET: pdf-downloads
+  SQS_ENDPOINT: http://elasticmq:9324
+  QUEUE_HIGH_URL: http://elasticmq:9324/000000000000/pdf-high
+  QUEUE_LOW_URL: http://elasticmq:9324/000000000000/pdf-low
+  SERVICE_TOKEN: local-dev-token
+  CHROMIUM_PATH: /usr/bin/chromium
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: pdf
+      POSTGRES_PASSWORD: pdf
+      POSTGRES_DB: pdf
+    ports: ["55432:5432"]
+    volumes:
+      - ./service/src/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pdf -d pdf"]
+      interval: 2s
+      retries: 30
+
+  # S3-compatible store with Object Lock support.
+  rustfs:
+    image: rustfs/rustfs:1.0.3
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [s3data:/data]
+
+  # One-shot bucket bootstrap (archive bucket with COMPLIANCE Object Lock, downloads bucket).
+  storage-init:
+    build: ./service
+    command: ["node", "scripts/init-storage.js"]
+    environment:
+      <<: *service-env
+      ARCHIVE_RETENTION_DAYS: "1" # 2920 (8 years) in production
+    depends_on: [rustfs]
+
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.6.11
+    ports: ["9324:9324", "9325:9325"]
+    volumes:
+      - ./service/elasticmq.conf:/opt/elasticmq.conf:ro
+
+  api:
+    build: ./service
+    command: ["node", "src/api.js"]
+    environment:
+      <<: *service-env
+      PORT: "8080"
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      storage-init: { condition: service_completed_successfully }
+      elasticmq: { condition: service_started }
+
+  worker:
+    build: ./service
+    command: ["node", "src/worker.js"]
+    environment:
+      <<: *service-env
+      WORKER_CONCURRENCY: "2"
+      CHUNK_ROWS: "150"
+      ALLOW_FAULT_INJECTION: "1" # lets e2e tests force a renderer crash; never set in production
+    # Cap memory like a real box would, so OOM behaviour is observable locally.
+    mem_limit: 1g
+    shm_size: 512m
+    depends_on:
+      postgres: { condition: service_healthy }
+      storage-init: { condition: service_completed_successfully }
+      elasticmq: { condition: service_started }
+
+volumes:
+  pgdata:
+  s3data:
