@@ -63,6 +63,7 @@ services:
   api:
     build: ./service
     command: ["node", "src/api.js"]
+    restart: unless-stopped
     environment:
       <<: *service-env
       PORT: "8080"
@@ -75,6 +76,7 @@ services:
   worker:
     build: ./service
     command: ["node", "src/worker.js"]
+    restart: unless-stopped # production: systemd Restart=always on the EC2 host
     environment:
       <<: *service-env
       WORKER_CONCURRENCY: "2"
