@@ -7,7 +7,7 @@
 // double-count shared libraries and overstate memory by ~2x.
 import fs from 'node:fs';
 import os from 'node:os';
-import puppeteer from 'puppeteer-core';
+import { PDFDocument } from 'pdf-lib';
 import { BrowserPool } from '../src/browser.js';
 import { renderDocument } from '../src/render.js';
 import { config } from '../src/config.js';
@@ -93,7 +93,7 @@ for (const rows of [5, 50, 150, 500, 1000, 2000]) {
     const base = chromiumPssMb();
     try {
       const m = await measure(() => renderDocument(pool, { docType: 'purchase_order', data: purchaseOrder({ rows }).data, mode, footer }));
-      const pages = (m.result.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
+      const pages = (await PDFDocument.load(m.result)).getPageCount();
       results.by_size.push({ rows, mode, ms: m.ms, peak_pss_mb: m.peakMb, delta_over_idle_mb: Math.round(m.peakMb - base), pages, pdf_kb: Math.round(m.result.length / 1024) });
     } catch (err) {
       results.by_size.push({ rows, mode, error: err.message });
