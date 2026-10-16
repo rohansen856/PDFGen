@@ -1,3 +1,5 @@
+import { once } from 'node:events';
+import { PassThrough } from 'node:stream';
 import archiver from 'archiver';
 import { Upload } from '@aws-sdk/lib-storage';
 import { s3 } from './clients.js';
@@ -11,17 +13,26 @@ const fileName = (d) => `${String(d.seq + 1).padStart(3, '0')}_${d.doc_ref.repla
 // for ~1-3% savings.
 async function writeZip(key, docs, manifest) {
   const archive = archiver('zip', { store: true });
+  // archiver emits a userland `readable-stream`, which lib-storage doesn't recognise; a native
+  // PassThrough bridges the two.
+  const body = archive.pipe(new PassThrough());
   const upload = new Upload({
     client: s3,
-    params: { Bucket: config.s3.downloadsBucket, Key: key, Body: archive, ContentType: 'application/zip' },
+    params: { Bucket: config.s3.downloadsBucket, Key: key, Body: body, ContentType: 'application/zip' },
   });
-  const done = upload.done();
-  archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
-  for (const d of docs) {
-    archive.append(await getObjectStream(config.s3.archiveBucket, d.pdf_key), { name: fileName(d) });
-  }
-  await archive.finalize();
-  await done;
+  const feed = (async () => {
+    archive.append(JSON.stringify(manifest, null, 2), { name: 'manifest.json' });
+    for (const d of docs) {
+      // One S3 stream open at a time: wait until archiver has written the previous entry.
+      const written = once(archive, 'entry');
+      archive.append(await getObjectStream(config.s3.archiveBucket, d.pdf_key), { name: fileName(d) });
+      await written;
+    }
+    await archive.finalize();
+  })();
+  // Await both together so a failure on either side rejects here instead of escaping as an
+  // unhandled rejection (which would take the whole worker process down).
+  await Promise.all([upload.done(), feed]);
 }
 
 /**
