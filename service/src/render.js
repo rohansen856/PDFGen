@@ -56,9 +56,11 @@ export async function renderDocument(pool, { docType, data, mode, footer }) {
   for (const chunk of chunks) {
     const html = chunkHtml(docType, data, chunk);
     const pdf = await pool.withPage(async (page) => {
-      page.setDefaultTimeout(config.renderTimeoutMs);
       if (config.allowFaultInjection && data._fault === 'crash_single_pass' && mode === 'single_pass') {
-        await page.goto('chrome://crash'); // kills this renderer process, like a real OOM would
+        // Really kill this tab's renderer process, which is exactly what a renderer OOM looks like.
+        const cdp = await page.createCDPSession();
+        await cdp.send('Page.crash').catch(() => {});
+        await page.setContent('<p>unreachable</p>'); // throws: the target is gone
       }
       await page.setJavaScriptEnabled(false); // templates are static; no reason to run script
       await page.setContent(html, { waitUntil: 'load' });
