@@ -1,0 +1,125 @@
+{
+  "host": {
+    "cpus": 16,
+    "cpu": "11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz",
+    "totalMemMb": 15713
+  },
+  "cold_20_rows": {
+    "p50_ms": 384,
+    "max_ms": 457,
+    "peak_pss_mb": 374
+  },
+  "warm_20_rows": {
+    "idle_browser_pss_mb": 350,
+    "p50_ms": 98,
+    "p95_ms": 125,
+    "peak_pss_mb": 405,
+    "pdf_kb": 29
+  },
+  "throughput": [
+    {
+      "concurrency": 1,
+      "docs": 24,
+      "seconds": 2.5,
+      "docs_per_min": 565,
+      "peak_pss_mb": 416
+    },
+    {
+      "concurrency": 2,
+      "docs": 24,
+      "seconds": 1.9,
+      "docs_per_min": 760,
+      "peak_pss_mb": 428
+    },
+    {
+      "concurrency": 4,
+      "docs": 24,
+      "seconds": 1.6,
+      "docs_per_min": 878,
+      "peak_pss_mb": 465
+    }
+  ],
+  "by_size": [
+    {
+      "rows": 5,
+      "mode": "single_pass",
+      "ms": 96,
+      "peak_pss_mb": 378,
+      "delta_over_idle_mb": 29,
+      "pages": 1,
+      "pdf_kb": 26
+    },
+    {
+      "rows": 50,
+      "mode": "single_pass",
+      "ms": 181,
+      "peak_pss_mb": 406,
+      "delta_over_idle_mb": 53,
+      "pages": 2,
+      "pdf_kb": 34
+    },
+    {
+      "rows": 150,
+      "mode": "single_pass",
+      "ms": 382,
+      "peak_pss_mb": 432,
+      "delta_over_idle_mb": 83,
+      "pages": 5,
+      "pdf_kb": 52
+    },
+    {
+      "rows": 500,
+      "mode": "single_pass",
+      "ms": 1059,
+      "peak_pss_mb": 503,
+      "delta_over_idle_mb": 155,
+      "pages": 14,
+      "pdf_kb": 112
+    },
+    {
+      "rows": 500,
+      "mode": "chunked",
+      "ms": 1332,
+      "peak_pss_mb": 433,
+      "delta_over_idle_mb": 81,
+      "pages": 15,
+      "pdf_kb": 192
+    },
+    {
+      "rows": 1000,
+      "mode": "single_pass",
+      "ms": 1993,
+      "peak_pss_mb": 653,
+      "delta_over_idle_mb": 304,
+      "pages": 26,
+      "pdf_kb": 197
+    },
+    {
+      "rows": 1000,
+      "mode": "chunked",
+      "ms": 2377,
+      "peak_pss_mb": 442,
+      "delta_over_idle_mb": 96,
+      "pages": 28,
+      "pdf_kb": 354
+    },
+    {
+      "rows": 2000,
+      "mode": "single_pass",
+      "ms": 4007,
+      "peak_pss_mb": 785,
+      "delta_over_idle_mb": 439,
+      "pages": 52,
+      "pdf_kb": 371
+    },
+    {
+      "rows": 2000,
+      "mode": "chunked",
+      "ms": 5320,
+      "peak_pss_mb": 445,
+      "delta_over_idle_mb": 92,
+      "pages": 55,
+      "pdf_kb": 707
+    }
+  ]
+}
