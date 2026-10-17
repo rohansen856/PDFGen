@@ -1,6 +1,8 @@
 import puppeteer from 'puppeteer-core';
 import { config } from './config.js';
 
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+
 // One long-lived Chromium per worker process. Launching Chromium is the expensive part
 // (~1 s and a few hundred MB); a new tab per render is cheap. The browser is replaced after
 // N renders (Chromium leaks slowly) or as soon as it dies.
@@ -47,14 +49,20 @@ export class BrowserPool {
   }
 
   // Run fn(page) on a fresh tab; the tab is always closed afterwards.
-  async withPage(fn) {
+  // A renderer that crashes (typically OOM) leaves Puppeteer calls on that page pending forever,
+  // so the work is raced against the page's 'error' (crash) event and a hard deadline.
+  async withPage(fn, { timeoutMs = config.renderTimeoutMs } = {}) {
     const slot = await this.#acquire();
     let page;
+    let timer;
     try {
       page = await slot.browser.newPage();
-      return await fn(page);
+      const crashed = new Promise((_, reject) => page.once('error', (e) => reject(new Error(`renderer crashed: ${e.message}`))));
+      const deadline = new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`render exceeded ${timeoutMs} ms`)), timeoutMs); });
+      return await Promise.race([fn(page), crashed, deadline]);
     } finally {
-      if (page) await page.close().catch(() => {});
+      clearTimeout(timer);
+      if (page) await withTimeout(page.close(), 5000).catch(() => {});
       await this.#release(slot);
     }
   }
