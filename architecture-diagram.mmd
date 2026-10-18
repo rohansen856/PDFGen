@@ -1,0 +1,39 @@
+%%{init: {"theme": "neutral", "flowchart": {"curve": "basis", "nodeSpacing": 50, "rankSpacing": 70}}}%%
+flowchart LR
+    user(["SME user<br/>browser · flaky network"])
+
+    subgraph existing["Existing — unchanged"]
+        django["Django monolith · EC2 r6i.large<br/>+ pdf_client.py<br/>(snapshot + 3 views)"]
+        redis[("Redis · cache only")]
+        erpdb[("RDS PostgreSQL<br/>ERP schema")]
+    end
+
+    subgraph pdfsvc["PDF service · ap-south-1 · no NAT · no ALB"]
+        api["PDF API<br/>base instance · c7g.large on-demand<br/>validate · freeze payload · enqueue<br/>wait ≤ 4 s via LISTEN/NOTIFY"]
+        workers["Worker fleet<br/>base: c7g.large on-demand<br/>burst: ASG 0..N c7g.xlarge Spot<br/>warm Chromium · tab per render<br/>&gt;150 rows → chunk + merge<br/>crash → retry chunked → FAILED"]
+        pdfdb[("pdf schema on same RDS<br/>jobs · documents<br/>pdf_ledger — append-only, hash-chained")]
+    end
+
+    subgraph aws["AWS managed"]
+        sqs[["SQS<br/>pdf-high: single<br/>pdf-low: bulk<br/>DLQ after 6 receives"]]
+        s3a[("S3 pdf-archive<br/>Object Lock COMPLIANCE · 8 y<br/>frozen payload JSON + PDFs<br/>→ Glacier IR after 90 d")]
+        s3d[("S3 pdf-downloads<br/>bulk zip · 25-doc parts · manifest<br/>expire after 7 d")]
+        cw["CloudWatch<br/>queue depth · DLQ · alarms"]
+    end
+
+    user -->|"1 · Download / Download all"| django
+    django --- redis
+    django -->|"2 · one REPEATABLE READ txn<br/>reads all docs at one as-of time"| erpdb
+    django -->|"3 · POST /v1/documents or /v1/bulk<br/>full payload + bearer token"| api
+    api -->|"4 · put payload + sha256"| s3a
+    api -->|"5 · insert job + documents"| pdfdb
+    api -->|"6 · enqueue doc ids"| sqs
+    sqs -->|"7 · long-poll<br/>high first, 1 slot reserved"| workers
+    workers -->|"8 · verify payload hash · render<br/>put PDF (WORM)"| s3a
+    workers -->|"9 · status · progress · ledger<br/>NOTIFY doc_finished"| pdfdb
+    workers -->|"10 · last doc of bulk:<br/>stream STORE zips"| s3d
+    api -->|"11 · 200 + presigned URL<br/>or 202 + job id · SSE progress"| django
+    django -->|"12 · progress / redirect"| user
+    user ==>|"13 · direct download, presigned<br/>HTTP Range = resumable"| s3d
+    sqs -.->|"queue depth"| cw
+    cw -.->|"scale burst ASG<br/>+ scheduled for GST due dates"| workers
