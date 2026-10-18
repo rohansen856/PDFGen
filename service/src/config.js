@@ -24,6 +24,7 @@ export const config = {
   serviceToken: env('SERVICE_TOKEN', 'local-dev-token'),
   chromiumPath: env('CHROMIUM_PATH', '/usr/bin/chromium'),
   workerConcurrency: Number(env('WORKER_CONCURRENCY', '2')),
+  dbPoolMax: Number(env('DB_POOL_MAX', '10')),
   chunkRows: Number(env('CHUNK_ROWS', '150')),
   maxRowsPerDoc: Number(env('MAX_ROWS_PER_DOC', '5000')),
   maxBulkDocs: 100,

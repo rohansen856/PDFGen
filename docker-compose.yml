@@ -80,6 +80,7 @@ services:
     environment:
       <<: *service-env
       WORKER_CONCURRENCY: "2"
+      DB_POOL_MAX: "3" # renders hold no connection; only short status/ledger writes do
       CHUNK_ROWS: "150"
       ALLOW_FAULT_INJECTION: "1" # lets e2e tests force a renderer crash; never set in production
     # Cap memory like a real box would, so OOM behaviour is observable locally.

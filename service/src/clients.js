@@ -5,7 +5,8 @@ import { config } from './config.js';
 
 const credentials = { accessKeyId: config.s3.accessKeyId, secretAccessKey: config.s3.secretAccessKey };
 
-export const db = new pg.Pool({ connectionString: config.databaseUrl, max: 10 });
+// Small pools: this is the ERP's shared database, and burst workers multiply connections.
+export const db = new pg.Pool({ connectionString: config.databaseUrl, max: config.dbPoolMax });
 
 export const s3 = new S3Client({
   endpoint: config.s3.endpoint,
